@@ -7,6 +7,7 @@ This version intentionally stays small:
 - Create an image-note task through `POST /api/publish`
 - Store task data in Cloudflare KV
 - Optionally upload base64 images to Cloudflare R2 through `POST /api/assets`
+- Upload local JPG, PNG, and WebP images from the web form
 - Open a mobile H5 page at `/p/:id`
 - Try to open Xiaohongshu, with copy text and image-save fallbacks
 - Query task state through `GET /api/status/:id`
@@ -52,6 +53,8 @@ curl -X POST "$PUBLIC_BASE_URL/api/assets" \
 ```
 
 The response includes `publicUrl`. Use that URL in `/api/publish`.
+
+The web form also supports local image upload. Bind an R2 bucket as `MEDIA_BUCKET`, then redeploy the Pages project.
 
 ### Local helper
 
