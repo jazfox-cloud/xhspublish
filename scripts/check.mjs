@@ -3,6 +3,7 @@ import path from "node:path";
 
 const requiredFiles = [
   "public/index.html",
+  "public/_routes.json",
   "functions/_shared.js",
   "functions/api/publish.js",
   "functions/api/assets.js",

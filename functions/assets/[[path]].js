@@ -1,5 +1,6 @@
 export async function onRequestGet({ params, env }) {
-  const key = `assets/${params.path || ""}`;
+  const path = Array.isArray(params.path) ? params.path.join("/") : params.path || "";
+  const key = `assets/${path}`;
   if (env.MEDIA_BUCKET) {
     const object = await env.MEDIA_BUCKET.get(key);
     if (!object) return new Response("Asset not found.", { status: 404 });
