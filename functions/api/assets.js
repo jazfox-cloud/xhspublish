@@ -5,7 +5,6 @@ const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 export async function onRequestPost({ request, env }) {
   try {
     requireWriteAuth(request, env);
-    if (!env.MEDIA_BUCKET) throw new HttpError(500, "Missing MEDIA_BUCKET R2 binding.");
 
     const input = await readJson(request);
     const contentType = normalizeContentType(input.contentType);
@@ -18,10 +17,18 @@ export async function onRequestPost({ request, env }) {
     if (bytes.byteLength > MAX_IMAGE_BYTES) throw new HttpError(413, "Image must be 8 MB or smaller.");
 
     const key = `assets/${new Date().toISOString().slice(0, 10)}/${createTaskId()}-${filename}`;
-    await env.MEDIA_BUCKET.put(key, bytes, {
-      httpMetadata: { contentType },
-      customMetadata: { uploadedBy: "xiaohongshu-publish-assistant" }
-    });
+    if (env.MEDIA_BUCKET) {
+      await env.MEDIA_BUCKET.put(key, bytes, {
+        httpMetadata: { contentType },
+        customMetadata: { uploadedBy: "xiaohongshu-publish-assistant" }
+      });
+    } else {
+      if (!env.PUBLISH_TASKS) throw new HttpError(500, "Missing MEDIA_BUCKET R2 binding or PUBLISH_TASKS KV fallback.");
+      await env.PUBLISH_TASKS.put(key, bytes, {
+        expirationTtl: 7 * 24 * 60 * 60,
+        metadata: { contentType }
+      });
+    }
 
     const publicUrl = env.R2_PUBLIC_BASE_URL
       ? `${env.R2_PUBLIC_BASE_URL.replace(/\/$/, "")}/${key}`

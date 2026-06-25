@@ -19,7 +19,7 @@ Video, history pages, scheduling, batch publishing, and multi-user auth are out 
 Create these bindings in Cloudflare Pages:
 
 - `PUBLISH_TASKS`: KV namespace for publish tasks
-- `MEDIA_BUCKET`: optional R2 bucket for uploaded images
+- `MEDIA_BUCKET`: optional R2 bucket for uploaded images. If omitted, uploaded images fall back to `PUBLISH_TASKS` KV with a 7-day TTL.
 - `PUBLIC_BASE_URL`: optional env var, for example `https://publish.example.com`
 - `R2_PUBLIC_BASE_URL`: optional public R2/custom-domain base URL. If omitted, uploaded assets are served by this app at `/assets/...`
 - `API_TOKEN`: optional env var. If set, write APIs require `Authorization: Bearer <token>`
@@ -54,7 +54,7 @@ curl -X POST "$PUBLIC_BASE_URL/api/assets" \
 
 The response includes `publicUrl`. Use that URL in `/api/publish`.
 
-The web form also supports local image upload. Bind an R2 bucket as `MEDIA_BUCKET`, then redeploy the Pages project.
+The web form also supports local image upload. For the MVP, images can fall back to `PUBLISH_TASKS` KV. For heavier use, bind an R2 bucket as `MEDIA_BUCKET`, then redeploy the Pages project.
 
 ### Local helper
 

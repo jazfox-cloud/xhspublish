@@ -1,16 +1,28 @@
 export async function onRequestGet({ params, env }) {
-  if (!env.MEDIA_BUCKET) {
-    return new Response("Missing MEDIA_BUCKET R2 binding.", { status: 500 });
+  const key = `assets/${params.path || ""}`;
+  if (env.MEDIA_BUCKET) {
+    const object = await env.MEDIA_BUCKET.get(key);
+    if (!object) return new Response("Asset not found.", { status: 404 });
+
+    const headers = new Headers();
+    object.writeHttpMetadata(headers);
+    headers.set("etag", object.httpEtag);
+    headers.set("cache-control", "public, max-age=31536000, immutable");
+
+    return new Response(object.body, { headers });
   }
 
-  const key = `assets/${params.path || ""}`;
-  const object = await env.MEDIA_BUCKET.get(key);
-  if (!object) return new Response("Asset not found.", { status: 404 });
+  if (!env.PUBLISH_TASKS) {
+    return new Response("Missing MEDIA_BUCKET R2 binding or PUBLISH_TASKS KV fallback.", { status: 500 });
+  }
 
-  const headers = new Headers();
-  object.writeHttpMetadata(headers);
-  headers.set("etag", object.httpEtag);
-  headers.set("cache-control", "public, max-age=31536000, immutable");
+  const object = await env.PUBLISH_TASKS.getWithMetadata(key, "arrayBuffer");
+  if (!object.value) return new Response("Asset not found.", { status: 404 });
 
-  return new Response(object.body, { headers });
+  return new Response(object.value, {
+    headers: {
+      "content-type": object.metadata?.contentType || "application/octet-stream",
+      "cache-control": "public, max-age=86400"
+    }
+  });
 }
