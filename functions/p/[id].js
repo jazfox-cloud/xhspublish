@@ -22,6 +22,10 @@ function renderExpired() {
 
 function renderTask(task) {
   const shareText = composeShareText(task);
+  const images = Array.isArray(task.images) ? task.images : [];
+  const imageJson = escapeScriptJson(images);
+  const titleJson = escapeScriptJson(task.title);
+  const shareTextJson = escapeScriptJson(shareText);
   const imageHtml = task.images?.length
     ? task.images
         .map(
@@ -38,17 +42,18 @@ function renderTask(task) {
     task.title,
     `
       <section class="actions">
-        <button id="open-xhs">复制并尝试打开小红书</button>
+        <button id="system-share">系统分享给小红书</button>
         <button id="copy-text" class="secondary">复制标题正文话题</button>
       </section>
+      <button id="open-xhs" class="wide red" type="button">仅尝试打开小红书 App</button>
       <section class="manual">
         <h2>发布步骤</h2>
         <ol>
-          <li>点“复制标题正文话题”。</li>
-          <li>长按下面图片保存到相册。</li>
-          <li>手动打开小红书，选择图片，新建笔记并粘贴文案。</li>
+          <li>优先点“系统分享给小红书”，看分享面板里是否出现小红书。</li>
+          <li>如果没有小红书，点“复制标题正文话题”。</li>
+          <li>长按下面图片保存到相册，手动打开小红书上传。</li>
         </ol>
-        <p class="muted">如果下面的打开入口没有反应，说明当前手机/浏览器不支持这个小红书唤起方式；这不影响复制和保存图片的半自动流程。</p>
+        <p class="muted">普通 H5 不能保证直接进入小红书发布器。系统分享能否出现小红书，取决于你的系统、小红书版本和当前浏览器。</p>
         <div class="link-actions">
           <a href="https://www.xiaohongshu.com" target="_blank" rel="noreferrer">打开小红书网页</a>
           <a href="xhsdiscover://">测试 xhsdiscover://</a>
@@ -68,10 +73,35 @@ function renderTask(task) {
       </section>
 
       <script>
+        const taskTitle = ${titleJson};
+        const taskImages = ${imageJson};
+        const taskShareText = ${shareTextJson};
         const shareText = document.querySelector("#share-text");
         document.querySelector("#copy-text").addEventListener("click", async () => {
           await navigator.clipboard.writeText(shareText.value);
           toast("文案已复制");
+        });
+        document.querySelector("#system-share").addEventListener("click", async () => {
+          try {
+            await navigator.clipboard.writeText(taskShareText);
+            if (!navigator.share) {
+              toast("当前浏览器不支持系统分享，已复制文案。");
+              return;
+            }
+
+            const files = await loadShareFiles(taskImages);
+            const payload = files.length ? { title: taskTitle, text: taskShareText, files } : { title: taskTitle, text: taskShareText };
+            if (files.length && navigator.canShare && !navigator.canShare({ files })) {
+              await navigator.share({ title: taskTitle, text: taskShareText });
+              toast("已打开系统分享；如果没有图片，请手动保存图片后发布。");
+              return;
+            }
+
+            await navigator.share(payload);
+            toast("已打开系统分享面板。");
+          } catch (error) {
+            toast(error.name === "AbortError" ? "已取消分享。" : "系统分享失败，已复制文案，请手动发布。");
+          }
         });
         document.querySelector("#open-xhs").addEventListener("click", async () => {
           await navigator.clipboard.writeText(shareText.value);
@@ -93,6 +123,22 @@ function renderTask(task) {
           const node = document.querySelector("#toast");
           node.textContent = message;
           node.hidden = false;
+        }
+        async function loadShareFiles(urls) {
+          const files = [];
+          for (const [index, url] of urls.entries()) {
+            const response = await fetch(url);
+            if (!response.ok) continue;
+            const blob = await response.blob();
+            const extension = extensionFor(blob.type);
+            files.push(new File([blob], \`xhs-image-\${index + 1}.\${extension}\`, { type: blob.type || "image/png" }));
+          }
+          return files;
+        }
+        function extensionFor(type) {
+          if (type === "image/jpeg") return "jpg";
+          if (type === "image/webp") return "webp";
+          return "png";
         }
       </script>
     `
@@ -145,6 +191,7 @@ function page(title, body) {
           .secondary { background: #27272a; }
           .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 18px 0; }
           .wide { width: 100%; background: #18181b; }
+          .red { background: #ff2442; margin-bottom: 12px; }
           .manual {
             margin: 18px 0;
             padding: 14px;
@@ -196,4 +243,8 @@ function page(title, body) {
         </main>
       </body>
     </html>`;
+}
+
+function escapeScriptJson(value) {
+  return JSON.stringify(value).replace(/</g, "\\u003c");
 }
