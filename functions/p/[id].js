@@ -38,8 +38,21 @@ function renderTask(task) {
     task.title,
     `
       <section class="actions">
-        <button id="open-xhs">尝试打开小红书</button>
+        <button id="open-xhs">复制并尝试打开小红书</button>
         <button id="copy-text" class="secondary">复制标题正文话题</button>
+      </section>
+      <section class="manual">
+        <h2>发布步骤</h2>
+        <ol>
+          <li>点“复制标题正文话题”。</li>
+          <li>长按下面图片保存到相册。</li>
+          <li>手动打开小红书，选择图片，新建笔记并粘贴文案。</li>
+        </ol>
+        <p class="muted">如果下面的打开入口没有反应，说明当前手机/浏览器不支持这个小红书唤起方式；这不影响复制和保存图片的半自动流程。</p>
+        <div class="link-actions">
+          <a href="https://www.xiaohongshu.com" target="_blank" rel="noreferrer">打开小红书网页</a>
+          <a href="xhsdiscover://">测试 xhsdiscover://</a>
+        </div>
       </section>
       <button id="mark-submitted" class="wide" type="button">我已在小红书发布</button>
 
@@ -132,6 +145,27 @@ function page(title, body) {
           .secondary { background: #27272a; }
           .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 18px 0; }
           .wide { width: 100%; background: #18181b; }
+          .manual {
+            margin: 18px 0;
+            padding: 14px;
+            border: 1px solid #e4e4e7;
+            border-radius: 8px;
+            background: #fff;
+          }
+          .manual h2 { margin-top: 0; }
+          .manual ol { padding-left: 22px; line-height: 1.65; }
+          .link-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+          .link-actions a {
+            display: inline-flex;
+            min-height: 38px;
+            align-items: center;
+            border-radius: 8px;
+            padding: 0 12px;
+            background: #f4f4f5;
+            color: #18181b;
+            text-decoration: none;
+            font-weight: 650;
+          }
           .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
           .image {
             display: block;
