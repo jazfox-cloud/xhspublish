@@ -53,7 +53,7 @@ function renderTask(task) {
           <li>如果没有小红书，点“复制标题正文话题”。</li>
           <li>长按下面图片保存到相册，手动打开小红书上传。</li>
         </ol>
-        <p class="muted">普通 H5 不能保证直接进入小红书发布器。系统分享能否出现小红书，取决于你的系统、小红书版本和当前浏览器。</p>
+        <p class="muted">普通 H5 不能保证直接进入小红书发布器。iPhone 可能只能打开 App 首页；安卓需要浏览器支持 Intent URL。真正进入发布编辑页，仍优先靠系统分享或手动打开发布入口。</p>
         <div class="link-actions">
           <a href="https://www.xiaohongshu.com" target="_blank" rel="noreferrer">打开小红书网页</a>
           <a href="xhsdiscover://">测试 xhsdiscover://</a>
@@ -106,9 +106,9 @@ function renderTask(task) {
         document.querySelector("#open-xhs").addEventListener("click", async () => {
           await navigator.clipboard.writeText(shareText.value);
           toast("已复制文案，正在尝试打开小红书");
-          window.location.href = "xhsdiscover://";
+          openXhsApp();
           setTimeout(() => {
-            toast("如果没有打开 App，请手动打开小红书并粘贴文案。");
+            toast("如果只打开首页，请点小红书底部发布按钮，再粘贴文案并选择图片。");
           }, 1600);
         });
         document.querySelector("#mark-submitted").addEventListener("click", async () => {
@@ -139,6 +139,14 @@ function renderTask(task) {
           if (type === "image/jpeg") return "jpg";
           if (type === "image/webp") return "webp";
           return "png";
+        }
+        function openXhsApp() {
+          const isAndroid = /Android/i.test(navigator.userAgent);
+          if (isAndroid) {
+            window.location.href = "intent://home#Intent;scheme=xhsdiscover;package=com.xingin.xhs;S.browser_fallback_url=https%3A%2F%2Fwww.xiaohongshu.com;end";
+            return;
+          }
+          window.location.href = "xhsdiscover://";
         }
       </script>
     `
