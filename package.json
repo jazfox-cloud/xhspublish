@@ -1,0 +1,11 @@
+{
+  "name": "xiaohongshu-publish-assistant",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "publish:note": "node scripts/publish.mjs",
+    "check": "node scripts/check.mjs"
+  }
+}
+
