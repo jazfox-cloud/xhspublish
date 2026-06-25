@@ -6,6 +6,7 @@ const requiredFiles = [
   "functions/_shared.js",
   "functions/api/publish.js",
   "functions/api/assets.js",
+  "functions/api/debug.js",
   "functions/api/status/[id].js",
   "functions/assets/[[path]].js",
   "functions/p/[id].js",
