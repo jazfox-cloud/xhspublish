@@ -53,7 +53,7 @@ function renderTask(task) {
           <li>如果没有小红书，点“复制标题正文话题”。</li>
           <li>长按下面图片保存到相册，手动打开小红书上传。</li>
         </ol>
-        <p class="muted">普通 H5 不能保证直接进入小红书发布器。iPhone 可能只能打开 App 首页；安卓需要浏览器支持 Intent URL。真正进入发布编辑页，仍优先靠系统分享或手动打开发布入口。</p>
+        <p class="muted">优先使用小红书分享路由打开发布编辑页并带入图文。若失败，再用复制文案和保存图片兜底。</p>
         <div class="link-actions">
           <a href="https://www.xiaohongshu.com" target="_blank" rel="noreferrer">打开小红书网页</a>
           <a href="xhsdiscover://">测试 xhsdiscover://</a>
@@ -105,10 +105,10 @@ function renderTask(task) {
         });
         document.querySelector("#open-xhs").addEventListener("click", async () => {
           await navigator.clipboard.writeText(shareText.value);
-          toast("已复制文案，正在尝试打开小红书");
-          openXhsApp();
+          toast("已复制文案，正在尝试打开小红书发布页");
+          openXhsPublish();
           setTimeout(() => {
-            toast("如果只打开首页，请点小红书底部发布按钮，再粘贴文案并选择图片。");
+            toast("如果没有进入发布页，请用系统分享或手动发布。");
           }, 1600);
         });
         document.querySelector("#mark-submitted").addEventListener("click", async () => {
@@ -131,7 +131,7 @@ function renderTask(task) {
             if (!response.ok) continue;
             const blob = await response.blob();
             const extension = extensionFor(blob.type);
-            files.push(new File([blob], \`xhs-image-\${index + 1}.\${extension}\`, { type: blob.type || "image/png" }));
+            files.push(new File([blob], "xhs-image-" + (index + 1) + "." + extension, { type: blob.type || "image/png" }));
           }
           return files;
         }
@@ -140,13 +140,85 @@ function renderTask(task) {
           if (type === "image/webp") return "webp";
           return "png";
         }
-        function openXhsApp() {
-          const isAndroid = /Android/i.test(navigator.userAgent);
-          if (isAndroid) {
-            window.location.href = "intent://home#Intent;scheme=xhsdiscover;package=com.xingin.xhs;S.browser_fallback_url=https%3A%2F%2Fwww.xiaohongshu.com;end";
+        function openXhsPublish() {
+          const route = buildXhsPublishRoute({
+            title: taskTitle,
+            content: taskShareText,
+            images: taskImages,
+            type: "normal"
+          });
+          if (!route) {
+            toast("当前内容缺少可发布图片。");
             return;
           }
-          window.location.href = "xhsdiscover://";
+          window.location.href = route;
+        }
+        function buildXhsPublishRoute(note) {
+          if (!note.images || !note.images.length) return "";
+          const isIOS = /iPad|iPhone|iPod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+          const isAndroid = /Android/i.test(navigator.userAgent);
+          if (isAndroid) {
+            const data = {
+              note_info: {
+                title: { value: note.title || "" },
+                content: { value: note.content || "" },
+                image_info: note.images.map((url) => ({ uri: null, url }))
+              },
+              share_type: "note",
+              sdk_version: "1.0.0",
+              third_app_package: "system_album_other",
+              third_app_version: "1.0.0",
+              share_session_id: "xhs_" + Date.now() + "_" + Math.random().toString(36).slice(2),
+              did: "",
+              start_share_timestamp: Date.now(),
+              fromJsSdk: false
+            };
+            return "xhsdiscover://share_sdk?data=" + encodeURIComponent(base64Json(data));
+          }
+          if (isIOS) {
+            const content = toIosTopicContent(note.content || "");
+            const attach = {
+              image_resources: note.images.map((url) => ({
+                image_url: url,
+                url,
+                imageUrl: url,
+                uri: url
+              })),
+              images: note.images,
+              note_title: note.title || "",
+              note_text: content,
+              note_text_v2: { content },
+              now_edit_info: { tti_open_keyboard: false }
+            };
+            const page = { page_type: "photo_publish" };
+            const source = {
+              type: "system_album_other",
+              externalSource: "xhspublish_direct",
+              extraInfo: { subType: "external_app" }
+            };
+            const schema =
+              "xhsdiscover://post_new_note?attach=" + encodeURIComponent(JSON.stringify(attach)) +
+              "&page=" + encodeURIComponent(JSON.stringify(page)) +
+              "&source=" + encodeURIComponent(JSON.stringify(source));
+            return "https://oia.xiaohongshu.com/oia?deeplink=" + encodeURIComponent(schema);
+          }
+          return "";
+        }
+        function base64Json(value) {
+          const json = JSON.stringify(value);
+          if (typeof TextEncoder !== "undefined") {
+            const bytes = new TextEncoder().encode(json);
+            let binary = "";
+            for (const byte of bytes) binary += String.fromCharCode(byte);
+            return btoa(binary);
+          }
+          return btoa(unescape(encodeURIComponent(json)));
+        }
+        function toIosTopicContent(value) {
+          return String(value).replace(/(^|\\s)#([^\\s#\\[\\]{}()（）<>《》【】.,，。!！?？;；:：、/\\\\|"“”‘’~@$%^&*=+]+)/g, (match, prefix, topic) => {
+            if (match.includes("[话题]#")) return match;
+            return prefix + "#" + topic + "[话题]#";
+          });
         }
       </script>
     `
