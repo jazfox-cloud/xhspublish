@@ -124,6 +124,32 @@
         color: #b91c1c;
       }
 
+      .importer {
+        margin-bottom: 18px;
+        border: 1px dashed #c4c4cc;
+        border-radius: 8px;
+        padding: 16px;
+        background: #fafafa;
+      }
+
+      .importer.dragover {
+        border-color: #ff2442;
+        background: #fff5f6;
+      }
+
+      .importer h2 {
+        margin: 0 0 6px;
+        font-size: 18px;
+      }
+
+      .importer input {
+        margin-top: 10px;
+      }
+
+      .import-status {
+        margin: 10px 0 0;
+      }
+
       .preview {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(86px, 1fr));
@@ -157,6 +183,12 @@
 
       <div class="layout">
         <form id="task-form">
+          <section id="importer" class="importer">
+            <h2>导入草稿</h2>
+            <p class="muted">拖入或选择 JSON、TXT、Markdown、图片文件。导入后仍可手动修改。</p>
+            <input id="draft-files" type="file" accept=".json,.txt,.md,.markdown,image/jpeg,image/png,image/webp" multiple />
+            <p id="import-status" class="muted import-status"></p>
+          </section>
           <label>
             标题
             <input name="title" required maxlength="80" placeholder="例如：小学数学口算练习资料整理" />
@@ -203,19 +235,139 @@
       const qr = document.querySelector("#qr");
       const links = document.querySelector("#links");
       const preview = document.querySelector("#upload-preview");
+      const importer = document.querySelector("#importer");
+      const draftFiles = document.querySelector("#draft-files");
+      const importStatus = document.querySelector("#import-status");
       const savedToken = localStorage.getItem("xhs_api_token");
       if (savedToken) form.elements.apiToken.value = savedToken;
 
+      draftFiles.addEventListener("change", async () => {
+        await importFiles(Array.from(draftFiles.files || []));
+        draftFiles.value = "";
+      });
+
+      for (const eventName of ["dragenter", "dragover"]) {
+        importer.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          importer.classList.add("dragover");
+        });
+      }
+
+      for (const eventName of ["dragleave", "drop"]) {
+        importer.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          importer.classList.remove("dragover");
+        });
+      }
+
+      importer.addEventListener("drop", async (event) => {
+        await importFiles(Array.from(event.dataTransfer.files || []));
+      });
+
       form.elements.imageFiles.addEventListener("change", () => {
+        renderImagePreview();
+      });
+
+      async function importFiles(files) {
+        if (!files.length) return;
+        const textFiles = files.filter((file) => isDraftFile(file));
+        const imageFiles = files.filter((file) => isImageFile(file));
+
+        try {
+          for (const file of textFiles) {
+            const text = await file.text();
+            const draft = file.name.toLowerCase().endsWith(".json") ? parseJsonDraft(text) : parseTextDraft(text);
+            applyDraft(draft);
+          }
+          if (imageFiles.length) appendImageFiles(imageFiles);
+
+          const parts = [];
+          if (textFiles.length) parts.push(`${textFiles.length} 个草稿文件`);
+          if (imageFiles.length) parts.push(`${imageFiles.length} 张图片`);
+          importStatus.className = "muted import-status";
+          importStatus.textContent = `已导入 ${parts.join("、")}。`;
+        } catch (error) {
+          importStatus.textContent = error.message;
+          importStatus.className = "muted import-status error";
+        }
+      }
+
+      function isDraftFile(file) {
+        const name = file.name.toLowerCase();
+        return file.type === "application/json" || name.endsWith(".json") || name.endsWith(".txt") || name.endsWith(".md") || name.endsWith(".markdown");
+      }
+
+      function isImageFile(file) {
+        return ["image/jpeg", "image/png", "image/webp"].includes(file.type);
+      }
+
+      function parseJsonDraft(text) {
+        const data = JSON.parse(text);
+        return {
+          title: data.title || "",
+          content: data.content || data.body || "",
+          images: Array.isArray(data.images) ? data.images : [],
+          topics: Array.isArray(data.topics) ? data.topics : []
+        };
+      }
+
+      function parseTextDraft(text) {
+        const lines = text.replace(/\r\n/g, "\n").split("\n");
+        const nonEmpty = lines.map((line) => line.trim()).filter(Boolean);
+        const heading = nonEmpty.find((line) => /^#{1,3}\s+/.test(line));
+        const titleLine = heading || nonEmpty.find((line) => !line.startsWith("#") && !isImageUrl(line)) || "";
+        const images = nonEmpty.filter(isImageUrl);
+        const topics = Array.from(text.matchAll(/(^|\s)#([^\s#]+)/g), (match) => match[2].replace(/[，。,.;；:：!！?？]+$/, ""));
+        const content = lines
+          .filter((line) => line.trim() !== titleLine)
+          .filter((line) => !isImageUrl(line.trim()))
+          .join("\n")
+          .trim();
+
+        return { title: titleLine.replace(/^#+\s*/, ""), content, images, topics };
+      }
+
+      function isImageUrl(value) {
+        return /^https?:\/\/\S+\.(png|jpe?g|webp)(\?\S*)?$/i.test(value);
+      }
+
+      function applyDraft(draft) {
+        if (draft.title) form.elements.title.value = draft.title.slice(0, 80);
+        if (draft.content) form.elements.content.value = draft.content;
+        if (draft.images?.length) {
+          const current = form.elements.images.value.trim();
+          const incoming = draft.images.map(String).filter(Boolean).join("\n");
+          form.elements.images.value = [current, incoming].filter(Boolean).join("\n");
+        }
+        if (draft.topics?.length) {
+          const currentTopics = form.elements.topics.value
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean);
+          const merged = [...new Set([...currentTopics, ...draft.topics.map((topic) => String(topic).replace(/^#/, "").trim()).filter(Boolean)])];
+          form.elements.topics.value = merged.join(", ");
+        }
+      }
+
+      function appendImageFiles(files) {
+        const input = form.elements.imageFiles;
+        const dataTransfer = new DataTransfer();
+        for (const file of Array.from(input.files || [])) dataTransfer.items.add(file);
+        for (const file of files) dataTransfer.items.add(file);
+        input.files = dataTransfer.files;
+        renderImagePreview();
+      }
+
+      function renderImagePreview() {
         preview.innerHTML = "";
-        for (const file of form.elements.imageFiles.files) {
+        for (const file of form.elements.imageFiles.files || []) {
           const image = document.createElement("img");
           image.alt = file.name;
           image.src = URL.createObjectURL(file);
           image.addEventListener("load", () => URL.revokeObjectURL(image.src), { once: true });
           preview.append(image);
         }
-      });
+      }
 
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
