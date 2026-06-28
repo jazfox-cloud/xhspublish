@@ -1,10 +1,10 @@
-import { HttpError, createTaskId, getBaseUrl, json, readJson, requireWriteAuth } from "../_shared.js";
+import { HttpError, createId, createTaskId, getBaseUrl, getCurrentUser, json, nowSeconds, readJson, requireWriteAuth } from "../_shared.js";
 
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 
 export async function onRequestPost({ request, env }) {
   try {
-    requireWriteAuth(request, env);
+    const user = await authorizeUpload(request, env);
 
     const input = await readJson(request);
     const contentType = normalizeContentType(input.contentType);
@@ -20,7 +20,7 @@ export async function onRequestPost({ request, env }) {
     if (env.MEDIA_BUCKET) {
       await env.MEDIA_BUCKET.put(key, bytes, {
         httpMetadata: { contentType },
-        customMetadata: { uploadedBy: "xiaohongshu-publish-assistant" }
+        customMetadata: { uploadedBy: user?.id || "api-token" }
       });
     } else {
       if (!env.PUBLISH_TASKS) throw new HttpError(500, "Missing MEDIA_BUCKET R2 binding or PUBLISH_TASKS KV fallback.");
@@ -33,11 +33,30 @@ export async function onRequestPost({ request, env }) {
     const publicUrl = env.R2_PUBLIC_BASE_URL
       ? `${env.R2_PUBLIC_BASE_URL.replace(/\/$/, "")}/${key}`
       : `${getBaseUrl(request, env)}/${key}`;
+
+    if (env.DB) {
+      await env.DB
+        .prepare(
+          `INSERT INTO assets (id, user_id, r2_key, public_url, file_size, mime_type, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`
+        )
+        .bind(createId("ast"), user?.id || null, key, publicUrl, bytes.byteLength, contentType, nowSeconds())
+        .run();
+    }
+
     return json({ key, publicUrl });
   } catch (error) {
     if (error instanceof HttpError) return json({ error: error.message }, { status: error.status });
     return json({ error: "Unexpected asset upload error." }, { status: 500 });
   }
+}
+
+async function authorizeUpload(request, env) {
+  const user = await getCurrentUser(request, env);
+  if (user) return user;
+  if (!env.API_TOKEN && env.DB) throw new HttpError(401, "请先登录。");
+  requireWriteAuth(request, env);
+  return null;
 }
 
 function normalizeContentType(value) {

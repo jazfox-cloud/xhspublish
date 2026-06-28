@@ -1,8 +1,7 @@
-import { TASK_TTL_SECONDS, composeShareText, escapeHtml, html, requireKv } from "../_shared.js";
+import { TASK_TTL_SECONDS, composeShareText, escapeHtml, html, nowSeconds, parseD1Task, requireKv } from "../_shared.js";
 
 export async function onRequestGet({ params, env }) {
-  const kv = requireKv(env);
-  const task = await kv.get(`task:${params.id}`, "json");
+  const task = await getTask(params.id, env);
   if (!task) {
     return html(renderExpired(), { status: 404 });
   }
@@ -10,10 +9,28 @@ export async function onRequestGet({ params, env }) {
   if (task.status === "pending") {
     task.status = "opened";
     task.openedAt = new Date().toISOString();
-    await kv.put(`task:${params.id}`, JSON.stringify(task), { expirationTtl: TASK_TTL_SECONDS });
+    await markOpened(params.id, task, env);
   }
 
   return html(renderTask(task));
+}
+
+async function getTask(id, env) {
+  if (env.DB) {
+    const row = await env.DB.prepare("SELECT * FROM publish_tasks WHERE id = ? AND expires_at > ?").bind(id, nowSeconds()).first();
+    if (row) return parseD1Task(row);
+  }
+  const kv = requireKv(env);
+  return kv.get(`task:${id}`, "json");
+}
+
+async function markOpened(id, task, env) {
+  if (env.DB && task.userId) {
+    await env.DB.prepare("UPDATE publish_tasks SET status = 'opened', opened_at = ? WHERE id = ?").bind(nowSeconds(), id).run();
+    return;
+  }
+  const kv = requireKv(env);
+  await kv.put(`task:${id}`, JSON.stringify(task), { expirationTtl: TASK_TTL_SECONDS });
 }
 
 function renderExpired() {
@@ -79,6 +96,11 @@ function renderTask(task) {
         document.querySelector("#open-xhs").addEventListener("click", async () => {
           await navigator.clipboard.writeText(shareText.value);
           toast("正在打开小红书发布页");
+          fetch("/api/status/${escapeHtml(task.id)}", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ status: "launched" })
+          }).catch(() => {});
           openXhsPublish();
           setTimeout(() => {
             toast("如果没有进入发布页，请复制文案并手动发布。");

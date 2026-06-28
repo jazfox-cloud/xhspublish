@@ -3,77 +3,38 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>小红书扫码发布助手</title>
+    <title>小红书发布助手</title>
     <style>
       :root {
         color-scheme: light;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        background: #f7f7f8;
+        background: #f6f6f7;
         color: #18181b;
       }
 
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
-        margin: 0;
-      }
-
+      * { box-sizing: border-box; }
+      body { margin: 0; }
       main {
-        width: min(980px, calc(100vw - 32px));
+        width: min(1120px, calc(100vw - 32px));
         margin: 0 auto;
-        padding: 40px 0;
+        padding: 32px 0 48px;
       }
-
-      h1 {
-        margin: 0 0 8px;
-        font-size: 32px;
-      }
-
-      p {
-        color: #52525b;
-        line-height: 1.6;
-      }
-
-      .layout {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) 320px;
-        gap: 24px;
-        margin-top: 24px;
-      }
-
-      form,
-      .result {
-        background: #fff;
-        border: 1px solid #e4e4e7;
-        border-radius: 8px;
-        padding: 20px;
-      }
-
-      label {
-        display: block;
-        margin: 0 0 14px;
-        font-weight: 650;
-      }
-
-      input,
-      textarea {
+      h1 { margin: 0 0 8px; font-size: 32px; line-height: 1.15; }
+      h2 { margin: 0 0 14px; font-size: 20px; }
+      h3 { margin: 0 0 8px; font-size: 16px; }
+      p { color: #52525b; line-height: 1.6; }
+      label { display: block; margin: 0 0 14px; font-weight: 650; }
+      input, textarea {
         width: 100%;
         margin-top: 8px;
         border: 1px solid #d4d4d8;
         border-radius: 8px;
         padding: 10px 12px;
         font: inherit;
+        background: #fff;
       }
-
-      textarea {
-        min-height: 150px;
-        resize: vertical;
-      }
-
-      button,
-      a.button {
+      textarea { min-height: 144px; resize: vertical; }
+      button, a.button {
         display: inline-flex;
         justify-content: center;
         align-items: center;
@@ -84,27 +45,76 @@
         background: #ff2442;
         color: #fff;
         font: inherit;
-        font-weight: 700;
+        font-weight: 750;
         text-decoration: none;
         cursor: pointer;
       }
-
-      .secondary {
-        background: #27272a;
+      button:disabled { cursor: not-allowed; opacity: .55; }
+      .secondary { background: #27272a; }
+      .ghost {
+        background: #fff;
+        color: #18181b;
+        border: 1px solid #d4d4d8;
       }
-
-      .muted {
-        color: #71717a;
-        font-size: 14px;
-      }
-
-      .actions {
+      .topbar {
         display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-        margin-top: 14px;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 18px;
+        margin-bottom: 22px;
       }
-
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 34px;
+        border-radius: 999px;
+        padding: 0 12px;
+        background: #fff;
+        border: 1px solid #e4e4e7;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 340px;
+        gap: 22px;
+      }
+      .panel {
+        background: #fff;
+        border: 1px solid #e4e4e7;
+        border-radius: 8px;
+        padding: 20px;
+      }
+      .stack { display: grid; gap: 16px; }
+      .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+      .muted { color: #71717a; font-size: 14px; }
+      .error { color: #b91c1c; }
+      .success { color: #15803d; }
+      .hidden { display: none !important; }
+      .importer {
+        margin-bottom: 18px;
+        border: 1px dashed #c4c4cc;
+        border-radius: 8px;
+        padding: 16px;
+        background: #fafafa;
+      }
+      .importer.dragover {
+        border-color: #ff2442;
+        background: #fff5f6;
+      }
+      .preview {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(86px, 1fr));
+        gap: 10px;
+        margin: -4px 0 14px;
+      }
+      .preview img {
+        width: 100%;
+        aspect-ratio: 1;
+        border: 1px solid #e4e4e7;
+        border-radius: 8px;
+        object-fit: cover;
+      }
       .qr {
         display: grid;
         place-items: center;
@@ -114,123 +124,134 @@
         background: #fafafa;
         text-align: center;
       }
-
-      .qr img {
-        width: 220px;
-        height: 220px;
+      .qr img { width: 220px; height: 220px; }
+      .plan, .task-row, .ledger-row {
+        border-top: 1px solid #ececef;
+        padding: 12px 0;
       }
-
-      .error {
-        color: #b91c1c;
-      }
-
-      .importer {
-        margin-bottom: 18px;
-        border: 1px dashed #c4c4cc;
-        border-radius: 8px;
-        padding: 16px;
-        background: #fafafa;
-      }
-
-      .importer.dragover {
-        border-color: #ff2442;
-        background: #fff5f6;
-      }
-
-      .importer h2 {
-        margin: 0 0 6px;
-        font-size: 18px;
-      }
-
-      .importer input {
-        margin-top: 10px;
-      }
-
-      .import-status {
-        margin: 10px 0 0;
-      }
-
-      .preview {
+      .plan:first-child, .task-row:first-child, .ledger-row:first-child { border-top: 0; padding-top: 0; }
+      .plan strong { display: block; color: #18181b; }
+      .price { font-weight: 800; color: #ff2442; }
+      .auth-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(86px, 1fr));
+        grid-template-columns: 1fr 120px;
         gap: 10px;
-        margin: -4px 0 14px;
       }
-
-      .preview img {
-        width: 100%;
-        aspect-ratio: 1;
-        border: 1px solid #e4e4e7;
-        border-radius: 8px;
-        object-fit: cover;
-      }
-
-      @media (max-width: 760px) {
-        main {
-          padding: 24px 0;
-        }
-
-        .layout {
-          grid-template-columns: 1fr;
-        }
+      @media (max-width: 860px) {
+        main { padding: 24px 0; }
+        .topbar { display: grid; }
+        .layout { grid-template-columns: 1fr; }
+        .auth-grid { grid-template-columns: 1fr; }
       }
     </style>
   </head>
   <body>
     <main>
-      <h1>小红书扫码发布助手</h1>
-      <p>先验证最小闭环：创建图文任务，手机扫码打开发布页，尝试唤起小红书；失败时复制文案并保存图片手动发布。</p>
+      <div class="topbar">
+        <div>
+          <h1>小红书发布助手</h1>
+          <p>扫码唤起小红书 App，图片和文案自动带入，人工确认发布。新用户赠送 15 积分，每创建 1 个发布任务消耗 1 积分。</p>
+        </div>
+        <div class="pill" id="balance-pill">未登录</div>
+      </div>
 
       <div class="layout">
-        <form id="task-form">
-          <section id="importer" class="importer">
-            <h2>导入草稿</h2>
-            <p class="muted">拖入或选择 JSON、TXT、Markdown、图片文件。导入后仍可手动修改。</p>
-            <input id="draft-files" type="file" accept=".json,.txt,.md,.markdown,image/jpeg,image/png,image/webp" multiple />
-            <p id="import-status" class="muted import-status"></p>
+        <section class="stack">
+          <section id="auth-panel" class="panel">
+            <h2>邮箱登录</h2>
+            <p class="muted">微信扫码登录会在开放平台资质完成后接入。现在先用邮箱验证码跑公开版闭环。</p>
+            <div class="auth-grid">
+              <label>
+                邮箱
+                <input id="email" type="email" autocomplete="email" placeholder="you@example.com" />
+              </label>
+              <button id="send-code" type="button">发送验证码</button>
+            </div>
+            <div class="auth-grid">
+              <label>
+                验证码
+                <input id="email-code" inputmode="numeric" maxlength="6" placeholder="6 位数字" />
+              </label>
+              <button id="verify-code" type="button">登录</button>
+            </div>
+            <p id="auth-message" class="muted"></p>
           </section>
-          <label>
-            标题
-            <input name="title" required maxlength="80" placeholder="例如：小学数学口算练习资料整理" />
-          </label>
-          <label>
-            正文
-            <textarea name="content" required placeholder="输入正文、卖点、领取方式等"></textarea>
-          </label>
-          <label>
-            图片 URL，一行一个
-            <textarea name="images" placeholder="https://example.com/image-1.jpg"></textarea>
-          </label>
-          <label>
-            本地图片上传到 R2，可选
-            <input name="imageFiles" type="file" accept="image/jpeg,image/png,image/webp" multiple />
-          </label>
-          <div id="upload-preview" class="preview" aria-live="polite"></div>
-          <label>
-            话题，逗号分隔
-            <input name="topics" placeholder="教辅资料, 小学数学, 学习资料" />
-          </label>
-          <label>
-            API Token，可选，保存在当前浏览器
-            <input name="apiToken" type="password" autocomplete="off" placeholder="Cloudflare 环境变量 API_TOKEN" />
-          </label>
-          <button type="submit">生成扫码发布页</button>
-          <p id="message" class="muted"></p>
-        </form>
 
-        <section class="result" aria-live="polite">
-          <h2>手机扫码</h2>
-          <div id="qr" class="qr">
-            <span class="muted">生成任务后显示二维码</span>
-          </div>
-          <div id="links" class="actions"></div>
-          <p class="muted">二维码图片由公开 QR 服务生成，仅用于 MVP 验证。正式版可以替换为内置二维码生成。</p>
+          <section id="workspace" class="panel hidden">
+            <h2>创建发布任务</h2>
+            <section id="importer" class="importer">
+              <h3>导入草稿</h3>
+              <p class="muted">拖入或选择 JSON、TXT、Markdown、图片文件。导入后仍可手动修改。</p>
+              <input id="draft-files" type="file" accept=".json,.txt,.md,.markdown,image/jpeg,image/png,image/webp" multiple />
+              <p id="import-status" class="muted"></p>
+            </section>
+
+            <form id="task-form">
+              <label>
+                标题
+                <input name="title" required maxlength="80" placeholder="例如：小学数学口算练习资料整理" />
+              </label>
+              <label>
+                正文
+                <textarea name="content" required placeholder="输入正文、卖点、领取方式等"></textarea>
+              </label>
+              <label>
+                图片 URL，一行一个
+                <textarea name="images" placeholder="https://example.com/image-1.jpg"></textarea>
+              </label>
+              <label>
+                本地图片上传，可选
+                <input name="imageFiles" type="file" accept="image/jpeg,image/png,image/webp" multiple />
+              </label>
+              <div id="upload-preview" class="preview" aria-live="polite"></div>
+              <label>
+                话题，逗号分隔
+                <input name="topics" placeholder="教辅资料, 小学数学, 学习资料" />
+              </label>
+              <button type="submit">消耗 1 积分生成扫码发布页</button>
+              <p id="message" class="muted"></p>
+            </form>
+          </section>
         </section>
+
+        <aside class="stack">
+          <section class="panel" aria-live="polite">
+            <h2>手机扫码</h2>
+            <div id="qr" class="qr">
+              <span class="muted">生成任务后显示二维码</span>
+            </div>
+            <div id="links" class="actions"></div>
+          </section>
+
+          <section id="plans-panel" class="panel hidden">
+            <h2>购买积分</h2>
+            <div id="plans"></div>
+            <p id="order-message" class="muted">当前为内测手动充值：创建订单后，把订单号发给管理员确认加积分。</p>
+          </section>
+
+          <section id="tasks-panel" class="panel hidden">
+            <h2>最近任务</h2>
+            <div id="tasks" class="muted">暂无任务。</div>
+          </section>
+
+          <section id="ledger-panel" class="panel hidden">
+            <h2>积分流水</h2>
+            <div id="ledger" class="muted">暂无流水。</div>
+            <div class="actions">
+              <button id="logout" type="button" class="ghost">退出登录</button>
+            </div>
+          </section>
+        </aside>
       </div>
     </main>
 
     <script>
+      const state = { user: null, plans: [] };
       const form = document.querySelector("#task-form");
+      const authPanel = document.querySelector("#auth-panel");
+      const workspace = document.querySelector("#workspace");
+      const balancePill = document.querySelector("#balance-pill");
+      const authMessage = document.querySelector("#auth-message");
       const message = document.querySelector("#message");
       const qr = document.querySelector("#qr");
       const links = document.querySelector("#links");
@@ -238,8 +259,12 @@
       const importer = document.querySelector("#importer");
       const draftFiles = document.querySelector("#draft-files");
       const importStatus = document.querySelector("#import-status");
-      const savedToken = localStorage.getItem("xhs_api_token");
-      if (savedToken) form.elements.apiToken.value = savedToken;
+
+      document.querySelector("#send-code").addEventListener("click", sendCode);
+      document.querySelector("#verify-code").addEventListener("click", verifyCode);
+      document.querySelector("#logout").addEventListener("click", logout);
+      form.elements.imageFiles.addEventListener("change", renderImagePreview);
+      form.addEventListener("submit", createTask);
 
       draftFiles.addEventListener("change", async () => {
         await importFiles(Array.from(draftFiles.files || []));
@@ -264,15 +289,197 @@
         await importFiles(Array.from(event.dataTransfer.files || []));
       });
 
-      form.elements.imageFiles.addEventListener("change", () => {
-        renderImagePreview();
-      });
+      init();
+
+      async function init() {
+        await refreshMe();
+        await loadPlans();
+        if (state.user) {
+          await Promise.all([loadTasks(), loadLedger()]);
+        }
+      }
+
+      async function sendCode() {
+        authMessage.className = "muted";
+        authMessage.textContent = "正在发送验证码...";
+        const email = document.querySelector("#email").value.trim();
+        try {
+          const result = await api("/api/auth/email/send-code", {
+            method: "POST",
+            body: { email }
+          });
+          authMessage.textContent = result.devCode
+            ? `测试验证码：${result.devCode}。正式发信需要配置 Resend。`
+            : result.message;
+        } catch (error) {
+          showAuthError(error.message);
+        }
+      }
+
+      async function verifyCode() {
+        authMessage.className = "muted";
+        authMessage.textContent = "正在登录...";
+        const email = document.querySelector("#email").value.trim();
+        const code = document.querySelector("#email-code").value.trim();
+        try {
+          await api("/api/auth/email/verify", { method: "POST", body: { email, code } });
+          await refreshMe();
+          await Promise.all([loadTasks(), loadLedger()]);
+          authMessage.textContent = "登录成功。";
+        } catch (error) {
+          showAuthError(error.message);
+        }
+      }
+
+      async function logout() {
+        await fetch("/api/auth/logout", { method: "POST" });
+        state.user = null;
+        renderAuth();
+      }
+
+      async function refreshMe() {
+        const result = await api("/api/auth/me");
+        state.user = result.user;
+        renderAuth();
+      }
+
+      function renderAuth() {
+        const loggedIn = Boolean(state.user);
+        authPanel.classList.toggle("hidden", loggedIn);
+        workspace.classList.toggle("hidden", !loggedIn);
+        document.querySelector("#plans-panel").classList.toggle("hidden", !loggedIn);
+        document.querySelector("#tasks-panel").classList.toggle("hidden", !loggedIn);
+        document.querySelector("#ledger-panel").classList.toggle("hidden", !loggedIn);
+        balancePill.textContent = loggedIn ? `${state.user.email} · ${state.user.creditBalance} 积分` : "未登录";
+      }
+
+      async function createTask(event) {
+        event.preventDefault();
+        message.textContent = "正在创建任务...";
+        message.className = "muted";
+        links.innerHTML = "";
+
+        const data = new FormData(form);
+        const payload = {
+          title: data.get("title").trim(),
+          content: data.get("content").trim(),
+          images: data.get("images").split("\n").map((item) => item.trim()).filter(Boolean),
+          topics: data.get("topics").split(",").map((item) => item.trim().replace(/^#/, "")).filter(Boolean),
+          idempotencyKey: crypto.randomUUID ? crypto.randomUUID() : String(Date.now())
+        };
+
+        try {
+          const uploadedUrls = await uploadSelectedImages();
+          payload.images.push(...uploadedUrls);
+          const result = await api("/api/tasks", { method: "POST", body: payload });
+          renderQr(result.publishUrl);
+          message.className = "muted success";
+          message.textContent = `任务已创建，过期时间：${new Date(result.expiresAt).toLocaleString()}`;
+          await Promise.all([refreshMe(), loadTasks(), loadLedger()]);
+        } catch (error) {
+          message.textContent = error.message;
+          message.className = "muted error";
+          qr.innerHTML = '<span class="muted">生成失败</span>';
+        }
+      }
+
+      function renderQr(publishUrl) {
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(publishUrl)}`;
+        qr.innerHTML = `<img alt="发布页二维码" src="${qrUrl}" />`;
+        links.innerHTML = `
+          <a class="button" href="${publishUrl}" target="_blank" rel="noreferrer">打开发布页</a>
+          <button class="secondary" type="button" id="copy-link">复制链接</button>
+        `;
+        document.querySelector("#copy-link").addEventListener("click", async () => {
+          await navigator.clipboard.writeText(publishUrl);
+          message.textContent = "发布页链接已复制。";
+        });
+      }
+
+      async function uploadSelectedImages() {
+        const files = Array.from(form.elements.imageFiles.files || []);
+        if (!files.length) return [];
+        if (files.length > 18) throw new Error("单次任务最多上传 18 张图片。");
+
+        const urls = [];
+        for (const [index, file] of files.entries()) {
+          if (file.size > 8 * 1024 * 1024) throw new Error(`${file.name} 超过 8 MB。`);
+          if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+            throw new Error(`${file.name} 不是支持的图片格式。`);
+          }
+          message.textContent = `正在上传图片 ${index + 1}/${files.length}...`;
+          const base64 = await fileToDataUrl(file);
+          const result = await api("/api/assets", {
+            method: "POST",
+            body: { filename: file.name, contentType: file.type, base64 }
+          });
+          urls.push(result.publicUrl);
+        }
+        return urls;
+      }
+
+      async function loadPlans() {
+        const result = await api("/api/credits/plans");
+        state.plans = result.plans || [];
+        document.querySelector("#plans").innerHTML = state.plans
+          .map((plan) => `
+            <div class="plan">
+              <strong>${plan.name} · ${plan.credits} 积分</strong>
+              <p class="muted">${plan.description} · <span class="price">¥${(plan.priceFen / 100).toFixed(1)}</span></p>
+              <button type="button" data-plan="${plan.id}">创建充值订单</button>
+            </div>
+          `)
+          .join("");
+        for (const button of document.querySelectorAll("[data-plan]")) {
+          button.addEventListener("click", () => createOrder(button.dataset.plan));
+        }
+      }
+
+      async function createOrder(planId) {
+        const orderMessage = document.querySelector("#order-message");
+        orderMessage.className = "muted";
+        orderMessage.textContent = "正在创建订单...";
+        try {
+          const result = await api("/api/orders", { method: "POST", body: { planId } });
+          orderMessage.className = "muted success";
+          orderMessage.textContent = `订单已创建：${result.order.id}。${result.order.paymentHint}`;
+        } catch (error) {
+          orderMessage.className = "muted error";
+          orderMessage.textContent = error.message;
+        }
+      }
+
+      async function loadTasks() {
+        const result = await api("/api/tasks");
+        const tasks = result.tasks || [];
+        document.querySelector("#tasks").innerHTML = tasks.length
+          ? tasks.map((task) => `
+              <div class="task-row">
+                <strong>${escapeHtml(task.title)}</strong>
+                <p class="muted">${task.status} · ${new Date(task.createdAt).toLocaleString()}</p>
+                <a href="/p/${task.id}" target="_blank" rel="noreferrer">打开发布页</a>
+              </div>
+            `).join("")
+          : "暂无任务。";
+      }
+
+      async function loadLedger() {
+        const result = await api("/api/credits/ledger");
+        const ledger = result.ledger || [];
+        document.querySelector("#ledger").innerHTML = ledger.length
+          ? ledger.slice(0, 6).map((item) => `
+              <div class="ledger-row">
+                <strong>${item.amount > 0 ? "+" : ""}${item.amount} 积分</strong>
+                <p class="muted">${item.note || item.type} · 余额 ${item.balanceAfter}</p>
+              </div>
+            `).join("")
+          : "暂无流水。";
+      }
 
       async function importFiles(files) {
         if (!files.length) return;
         const textFiles = files.filter((file) => isDraftFile(file));
         const imageFiles = files.filter((file) => isImageFile(file));
-
         try {
           for (const file of textFiles) {
             const text = await file.text();
@@ -280,15 +487,14 @@
             applyDraft(draft);
           }
           if (imageFiles.length) appendImageFiles(imageFiles);
-
           const parts = [];
           if (textFiles.length) parts.push(`${textFiles.length} 个草稿文件`);
           if (imageFiles.length) parts.push(`${imageFiles.length} 张图片`);
-          importStatus.className = "muted import-status";
+          importStatus.className = "muted";
           importStatus.textContent = `已导入 ${parts.join("、")}。`;
         } catch (error) {
           importStatus.textContent = error.message;
-          importStatus.className = "muted import-status error";
+          importStatus.className = "muted error";
         }
       }
 
@@ -323,7 +529,6 @@
           .filter((line) => !isImageUrl(line.trim()))
           .join("\n")
           .trim();
-
         return { title: titleLine.replace(/^#+\s*/, ""), content, images, topics };
       }
 
@@ -340,10 +545,7 @@
           form.elements.images.value = [current, incoming].filter(Boolean).join("\n");
         }
         if (draft.topics?.length) {
-          const currentTopics = form.elements.topics.value
-            .split(",")
-            .map((item) => item.trim())
-            .filter(Boolean);
+          const currentTopics = form.elements.topics.value.split(",").map((item) => item.trim()).filter(Boolean);
           const merged = [...new Set([...currentTopics, ...draft.topics.map((topic) => String(topic).replace(/^#/, "").trim()).filter(Boolean)])];
           form.elements.topics.value = merged.join(", ");
         }
@@ -369,98 +571,6 @@
         }
       }
 
-      form.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        message.textContent = "正在创建任务...";
-        message.className = "muted";
-        links.innerHTML = "";
-
-        const data = new FormData(form);
-        const payload = {
-          title: data.get("title").trim(),
-          content: data.get("content").trim(),
-          images: data
-            .get("images")
-            .split("\n")
-            .map((item) => item.trim())
-            .filter(Boolean),
-          topics: data
-            .get("topics")
-            .split(",")
-            .map((item) => item.trim().replace(/^#/, ""))
-            .filter(Boolean),
-          source: "web"
-        };
-        const apiToken = data.get("apiToken").trim();
-        if (apiToken) localStorage.setItem("xhs_api_token", apiToken);
-        else localStorage.removeItem("xhs_api_token");
-
-        try {
-          const uploadedUrls = await uploadSelectedImages(apiToken);
-          payload.images.push(...uploadedUrls);
-
-          const response = await fetch("/api/publish", {
-            method: "POST",
-            headers: {
-              "content-type": "application/json",
-              ...(apiToken ? { authorization: `Bearer ${apiToken}` } : {})
-            },
-            body: JSON.stringify(payload)
-          });
-          const result = await response.json();
-          if (!response.ok) throw new Error(result.error || "创建失败");
-
-          const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(result.publishUrl)}`;
-          qr.innerHTML = `<img alt="发布页二维码" src="${qrUrl}" />`;
-          links.innerHTML = `
-            <a class="button" href="${result.publishUrl}" target="_blank" rel="noreferrer">打开发布页</a>
-            <button class="secondary" type="button" id="copy-link">复制链接</button>
-          `;
-          document.querySelector("#copy-link").addEventListener("click", async () => {
-            await navigator.clipboard.writeText(result.publishUrl);
-            message.textContent = "发布页链接已复制。";
-          });
-          message.textContent = `任务已创建，过期时间：${new Date(result.expiresAt).toLocaleString()}`;
-        } catch (error) {
-          message.textContent = error.message;
-          message.className = "muted error";
-          qr.innerHTML = '<span class="muted">生成失败</span>';
-        }
-      });
-
-      async function uploadSelectedImages(apiToken) {
-        const files = Array.from(form.elements.imageFiles.files || []);
-        if (!files.length) return [];
-        if (!apiToken) throw new Error("上传本地图片需要先填写 API Token。");
-
-        const urls = [];
-        for (const [index, file] of files.entries()) {
-          if (file.size > 8 * 1024 * 1024) throw new Error(`${file.name} 超过 8 MB。`);
-          if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-            throw new Error(`${file.name} 不是支持的图片格式。`);
-          }
-
-          message.textContent = `正在上传图片 ${index + 1}/${files.length}...`;
-          const base64 = await fileToDataUrl(file);
-          const response = await fetch("/api/assets", {
-            method: "POST",
-            headers: {
-              "content-type": "application/json",
-              authorization: `Bearer ${apiToken}`
-            },
-            body: JSON.stringify({
-              filename: file.name,
-              contentType: file.type,
-              base64
-            })
-          });
-          const result = await response.json();
-          if (!response.ok) throw new Error(result.error || `${file.name} 上传失败`);
-          urls.push(result.publicUrl);
-        }
-        return urls;
-      }
-
       function fileToDataUrl(file) {
         return new Promise((resolve, reject) => {
           const reader = new FileReader();
@@ -468,6 +578,31 @@
           reader.addEventListener("error", () => reject(new Error(`${file.name} 读取失败`)));
           reader.readAsDataURL(file);
         });
+      }
+
+      async function api(url, options = {}) {
+        const response = await fetch(url, {
+          method: options.method || "GET",
+          headers: options.body ? { "content-type": "application/json" } : undefined,
+          body: options.body ? JSON.stringify(options.body) : undefined
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || "请求失败");
+        return result;
+      }
+
+      function showAuthError(text) {
+        authMessage.textContent = text;
+        authMessage.className = "muted error";
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
       }
     </script>
   </body>
