@@ -42,22 +42,17 @@ function renderTask(task) {
     task.title,
     `
       <section class="actions">
-        <button id="system-share">系统分享给小红书</button>
+        <button id="open-xhs">发布到小红书</button>
         <button id="copy-text" class="secondary">复制标题正文话题</button>
       </section>
-      <button id="open-xhs" class="wide red" type="button">仅尝试打开小红书 App</button>
       <section class="manual">
         <h2>发布步骤</h2>
         <ol>
-          <li>优先点“系统分享给小红书”，看分享面板里是否出现小红书。</li>
-          <li>如果没有小红书，点“复制标题正文话题”。</li>
-          <li>长按下面图片保存到相册，手动打开小红书上传。</li>
+          <li>点击“发布到小红书”，进入小红书发布编辑页。</li>
+          <li>确认图片、标题、正文和话题无误。</li>
+          <li>在小红书 App 内点击发布。</li>
         </ol>
-        <p class="muted">优先使用小红书分享路由打开发布编辑页并带入图文。若失败，再用复制文案和保存图片兜底。</p>
-        <div class="link-actions">
-          <a href="https://www.xiaohongshu.com" target="_blank" rel="noreferrer">打开小红书网页</a>
-          <a href="xhsdiscover://">测试 xhsdiscover://</a>
-        </div>
+        <p class="muted">如果跳转失败，可复制文案并长按保存图片后手动发布。</p>
       </section>
       <button id="mark-submitted" class="wide" type="button">我已在小红书发布</button>
 
@@ -81,34 +76,12 @@ function renderTask(task) {
           await navigator.clipboard.writeText(shareText.value);
           toast("文案已复制");
         });
-        document.querySelector("#system-share").addEventListener("click", async () => {
-          try {
-            await navigator.clipboard.writeText(taskShareText);
-            if (!navigator.share) {
-              toast("当前浏览器不支持系统分享，已复制文案。");
-              return;
-            }
-
-            const files = await loadShareFiles(taskImages);
-            const payload = files.length ? { title: taskTitle, text: taskShareText, files } : { title: taskTitle, text: taskShareText };
-            if (files.length && navigator.canShare && !navigator.canShare({ files })) {
-              await navigator.share({ title: taskTitle, text: taskShareText });
-              toast("已打开系统分享；如果没有图片，请手动保存图片后发布。");
-              return;
-            }
-
-            await navigator.share(payload);
-            toast("已打开系统分享面板。");
-          } catch (error) {
-            toast(error.name === "AbortError" ? "已取消分享。" : "系统分享失败，已复制文案，请手动发布。");
-          }
-        });
         document.querySelector("#open-xhs").addEventListener("click", async () => {
           await navigator.clipboard.writeText(shareText.value);
-          toast("已复制文案，正在尝试打开小红书发布页");
+          toast("正在打开小红书发布页");
           openXhsPublish();
           setTimeout(() => {
-            toast("如果没有进入发布页，请用系统分享或手动发布。");
+            toast("如果没有进入发布页，请复制文案并手动发布。");
           }, 1600);
         });
         document.querySelector("#mark-submitted").addEventListener("click", async () => {
@@ -123,22 +96,6 @@ function renderTask(task) {
           const node = document.querySelector("#toast");
           node.textContent = message;
           node.hidden = false;
-        }
-        async function loadShareFiles(urls) {
-          const files = [];
-          for (const [index, url] of urls.entries()) {
-            const response = await fetch(url);
-            if (!response.ok) continue;
-            const blob = await response.blob();
-            const extension = extensionFor(blob.type);
-            files.push(new File([blob], "xhs-image-" + (index + 1) + "." + extension, { type: blob.type || "image/png" }));
-          }
-          return files;
-        }
-        function extensionFor(type) {
-          if (type === "image/jpeg") return "jpg";
-          if (type === "image/webp") return "webp";
-          return "png";
         }
         function openXhsPublish() {
           const route = buildXhsPublishRoute({
@@ -271,7 +228,6 @@ function page(title, body) {
           .secondary { background: #27272a; }
           .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 18px 0; }
           .wide { width: 100%; background: #18181b; }
-          .red { background: #ff2442; margin-bottom: 12px; }
           .manual {
             margin: 18px 0;
             padding: 14px;
@@ -281,18 +237,6 @@ function page(title, body) {
           }
           .manual h2 { margin-top: 0; }
           .manual ol { padding-left: 22px; line-height: 1.65; }
-          .link-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-          .link-actions a {
-            display: inline-flex;
-            min-height: 38px;
-            align-items: center;
-            border-radius: 8px;
-            padding: 0 12px;
-            background: #f4f4f5;
-            color: #18181b;
-            text-decoration: none;
-            font-weight: 650;
-          }
           .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
           .image {
             display: block;
