@@ -16,12 +16,12 @@ export async function onRequestPost({ request, env }) {
     await kv.put(`auth:email:${email}`, code, { expirationTtl: CODE_TTL_SECONDS });
     await kv.put(rateKey, "1", { expirationTtl: 60 });
 
-    const sent = await sendEmailCode(env, email, code);
+    const delivery = await sendEmailCode(env, email, code);
     return json({
       ok: true,
-      sent,
-      message: sent ? "验证码已发送，请查收邮箱。" : "未配置邮件服务，已返回测试验证码。",
-      ...(sent ? {} : { devCode: code })
+      sent: delivery.sent,
+      message: delivery.message,
+      ...(delivery.sent ? {} : { devCode: code, emailError: delivery.error })
     });
   } catch (error) {
     return handleError(error);
@@ -29,7 +29,9 @@ export async function onRequestPost({ request, env }) {
 }
 
 async function sendEmailCode(env, email, code) {
-  if (!env.RESEND_API_KEY || !env.EMAIL_FROM) return false;
+  if (!env.RESEND_API_KEY || !env.EMAIL_FROM) {
+    return { sent: false, message: "未配置邮件服务，已返回测试验证码。", error: "missing_email_config" };
+  }
   const response = await fetch(RESEND_ENDPOINT, {
     method: "POST",
     headers: {
@@ -44,7 +46,14 @@ async function sendEmailCode(env, email, code) {
       headers: { "X-Entity-Ref-ID": createId("mail") }
     })
   });
-  return response.ok;
+  if (response.ok) return { sent: true, message: "验证码已发送，请查收邮箱。" };
+
+  const text = await response.text();
+  return {
+    sent: false,
+    message: "邮件服务返回错误，已返回测试验证码。",
+    error: `resend_${response.status}: ${text.slice(0, 300)}`
+  };
 }
 
 function handleError(error) {
