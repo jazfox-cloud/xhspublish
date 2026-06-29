@@ -9,6 +9,7 @@ The public MVP now supports:
 - 1 credit spent per created publish task
 - D1-backed users, sessions, tasks, credits, orders, and asset records
 - Manual recharge orders for the first public test
+- A lightweight internal admin page at `/admin.html`
 - Optional image uploads to Cloudflare R2, with KV fallback
 - Open a mobile H5 page at `/p/:id`
 - Launch Xiaohongshu publish routes with copy text and image-save fallbacks
@@ -96,6 +97,10 @@ curl -X POST "$PUBLIC_BASE_URL/api/assets" \
 The response includes `publicUrl`. Logged-in browser uploads use the session cookie. Private automation may also use `Authorization: Bearer $API_TOKEN`.
 
 ### Manual credit adjustment
+
+Open `/admin.html`, enter `ADMIN_SECRET`, then refresh users/orders and adjust credits from the browser.
+
+The same action is also available as an API:
 
 ```bash
 curl -X POST "$PUBLIC_BASE_URL/admin/credits/adjust" \

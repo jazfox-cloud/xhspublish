@@ -54,6 +54,12 @@ export function requireDb(env) {
   return env.DB;
 }
 
+export function requireAdmin(request, env) {
+  if (!env.ADMIN_SECRET || request.headers.get("authorization") !== `Bearer ${env.ADMIN_SECRET}`) {
+    throw new HttpError(401, "Missing or invalid admin secret.");
+  }
+}
+
 export function getBaseUrl(request, env) {
   if (env.PUBLIC_BASE_URL) return env.PUBLIC_BASE_URL.replace(/\/$/, "");
   const url = new URL(request.url);

@@ -3,6 +3,7 @@ import path from "node:path";
 
 const requiredFiles = [
   "public/index.html",
+  "public/admin.html",
   "public/_routes.json",
   "functions/_shared.js",
   "functions/api/auth/email/send-code.js",
@@ -17,6 +18,8 @@ const requiredFiles = [
   "functions/api/credits/ledger.js",
   "functions/api/credits/plans.js",
   "functions/api/orders.js",
+  "functions/admin/users.js",
+  "functions/admin/orders.js",
   "functions/admin/credits/adjust.js",
   "functions/api/debug.js",
   "functions/api/status/[id].js",

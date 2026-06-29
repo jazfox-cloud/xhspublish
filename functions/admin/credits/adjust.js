@@ -1,10 +1,8 @@
-import { HttpError, createId, json, nowSeconds, readJson, requireDb } from "../../_shared.js";
+import { HttpError, createId, json, nowSeconds, readJson, requireAdmin, requireDb } from "../../_shared.js";
 
 export async function onRequestPost({ request, env }) {
   try {
-    if (!env.ADMIN_SECRET || request.headers.get("authorization") !== `Bearer ${env.ADMIN_SECRET}`) {
-      throw new HttpError(401, "Missing or invalid admin secret.");
-    }
+    requireAdmin(request, env);
     const db = requireDb(env);
     const input = await readJson(request);
     const userId = String(input.userId || "").trim();

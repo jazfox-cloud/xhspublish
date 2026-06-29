@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>管理员面板 - 小红书发布助手</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #f6f6f7;
+        color: #18181b;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; }
+      main {
+        width: min(1120px, calc(100vw - 32px));
+        margin: 0 auto;
+        padding: 32px 0 48px;
+      }
+      h1 { margin: 0 0 8px; font-size: 30px; }
+      h2 { margin: 0 0 14px; font-size: 20px; }
+      p { color: #52525b; line-height: 1.6; }
+      input, select, textarea {
+        width: 100%;
+        border: 1px solid #d4d4d8;
+        border-radius: 8px;
+        padding: 10px 12px;
+        font: inherit;
+        background: #fff;
+      }
+      textarea { min-height: 78px; resize: vertical; }
+      label { display: grid; gap: 7px; font-weight: 650; }
+      button {
+        min-height: 42px;
+        border: 0;
+        border-radius: 8px;
+        padding: 0 16px;
+        background: #ff2442;
+        color: #fff;
+        font: inherit;
+        font-weight: 750;
+        cursor: pointer;
+      }
+      .secondary { background: #27272a; }
+      .panel {
+        background: #fff;
+        border: 1px solid #e4e4e7;
+        border-radius: 8px;
+        padding: 18px;
+      }
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 360px;
+        gap: 18px;
+        align-items: start;
+      }
+      .stack { display: grid; gap: 16px; }
+      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+      .muted { color: #71717a; font-size: 14px; }
+      .error { color: #b91c1c; }
+      .success { color: #15803d; }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+      th, td {
+        border-bottom: 1px solid #ececef;
+        padding: 10px 8px;
+        text-align: left;
+        vertical-align: top;
+      }
+      th { color: #71717a; font-weight: 750; }
+      code {
+        border-radius: 6px;
+        background: #f4f4f5;
+        padding: 2px 5px;
+        word-break: break-all;
+      }
+      @media (max-width: 860px) {
+        .layout, .grid { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>管理员面板</h1>
+      <p>内测用轻量后台：查询用户和订单，给用户手动加积分。请只在自己的设备上使用，并妥善保存 `ADMIN_SECRET`。</p>
+
+      <section class="panel">
+        <label>
+          ADMIN_SECRET
+          <input id="admin-secret" type="password" autocomplete="off" placeholder="Cloudflare 环境变量 ADMIN_SECRET" />
+        </label>
+        <div class="actions" style="margin-top: 12px">
+          <button id="save-secret" type="button">保存到当前浏览器</button>
+          <button id="clear-secret" class="secondary" type="button">清除</button>
+          <span id="secret-message" class="muted"></span>
+        </div>
+      </section>
+
+      <div class="layout" style="margin-top: 18px">
+        <section class="stack">
+          <section class="panel">
+            <h2>用户</h2>
+            <div class="actions">
+              <input id="user-query" placeholder="按邮箱或 userId 搜索" />
+              <button id="load-users" type="button">刷新用户</button>
+            </div>
+            <div id="users" style="margin-top: 12px"></div>
+          </section>
+
+          <section class="panel">
+            <h2>订单</h2>
+            <div class="actions">
+              <select id="order-status">
+                <option value="">全部状态</option>
+                <option value="pending">pending</option>
+                <option value="paid">paid</option>
+                <option value="failed">failed</option>
+                <option value="refunded">refunded</option>
+              </select>
+              <button id="load-orders" type="button">刷新订单</button>
+            </div>
+            <div id="orders" style="margin-top: 12px"></div>
+          </section>
+        </section>
+
+        <aside class="panel">
+          <h2>手动加积分</h2>
+          <form id="adjust-form" class="stack">
+            <label>
+              User ID
+              <input name="userId" required placeholder="usr_xxx" />
+            </label>
+            <label>
+              增加积分
+              <input name="amount" required inputmode="numeric" value="10000" />
+            </label>
+            <label>
+              关联订单，可选
+              <input name="relatedId" placeholder="ord_xxx" />
+            </label>
+            <label>
+              备注
+              <textarea name="note">管理员手动加积分</textarea>
+            </label>
+            <button type="submit">确认加积分</button>
+            <p id="adjust-message" class="muted"></p>
+          </form>
+        </aside>
+      </div>
+    </main>
+
+    <script>
+      const secretInput = document.querySelector("#admin-secret");
+      const savedSecret = localStorage.getItem("xhs_admin_secret");
+      if (savedSecret) secretInput.value = savedSecret;
+
+      document.querySelector("#save-secret").addEventListener("click", () => {
+        localStorage.setItem("xhs_admin_secret", secretInput.value.trim());
+        show("#secret-message", "已保存。", "success");
+      });
+
+      document.querySelector("#clear-secret").addEventListener("click", () => {
+        localStorage.removeItem("xhs_admin_secret");
+        secretInput.value = "";
+        show("#secret-message", "已清除。", "");
+      });
+
+      document.querySelector("#load-users").addEventListener("click", loadUsers);
+      document.querySelector("#load-orders").addEventListener("click", loadOrders);
+      document.querySelector("#adjust-form").addEventListener("submit", adjustCredits);
+
+      loadUsers().catch(() => {});
+      loadOrders().catch(() => {});
+
+      async function loadUsers() {
+        const q = document.querySelector("#user-query").value.trim();
+        const result = await adminApi(`/admin/users${q ? `?q=${encodeURIComponent(q)}` : ""}`);
+        const users = result.users || [];
+        document.querySelector("#users").innerHTML = users.length
+          ? `<table>
+              <thead><tr><th>邮箱</th><th>积分</th><th>User ID</th><th>注册时间</th><th></th></tr></thead>
+              <tbody>
+                ${users.map((user) => `
+                  <tr>
+                    <td>${escapeHtml(user.email || "")}</td>
+                    <td>${user.creditBalance}</td>
+                    <td><code>${escapeHtml(user.id)}</code></td>
+                    <td>${new Date(user.createdAt).toLocaleString()}</td>
+                    <td><button type="button" data-user="${escapeHtml(user.id)}">填入</button></td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>`
+          : '<p class="muted">暂无用户。</p>';
+        for (const button of document.querySelectorAll("[data-user]")) {
+          button.addEventListener("click", () => {
+            document.querySelector("#adjust-form").elements.userId.value = button.dataset.user;
+          });
+        }
+      }
+
+      async function loadOrders() {
+        const status = document.querySelector("#order-status").value;
+        const result = await adminApi(`/admin/orders${status ? `?status=${encodeURIComponent(status)}` : ""}`);
+        const orders = result.orders || [];
+        document.querySelector("#orders").innerHTML = orders.length
+          ? `<table>
+              <thead><tr><th>订单</th><th>用户</th><th>积分</th><th>金额</th><th>状态</th><th></th></tr></thead>
+              <tbody>
+                ${orders.map((order) => `
+                  <tr>
+                    <td><code>${escapeHtml(order.id)}</code></td>
+                    <td>${escapeHtml(order.email || "")}</td>
+                    <td>${order.creditsAmount}</td>
+                    <td>¥${(order.priceFen / 100).toFixed(2)}</td>
+                    <td>${escapeHtml(order.status)}</td>
+                    <td><button type="button" data-order="${escapeHtml(order.id)}" data-user="${escapeHtml(order.userId)}" data-credits="${order.creditsAmount}">充值</button></td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>`
+          : '<p class="muted">暂无订单。</p>';
+        for (const button of document.querySelectorAll("[data-order]")) {
+          button.addEventListener("click", () => {
+            const form = document.querySelector("#adjust-form");
+            form.elements.userId.value = button.dataset.user;
+            form.elements.amount.value = button.dataset.credits;
+            form.elements.relatedId.value = button.dataset.order;
+            form.elements.note.value = "手动确认充值订单";
+          });
+        }
+      }
+
+      async function adjustCredits(event) {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const payload = {
+          userId: form.elements.userId.value.trim(),
+          amount: Number(form.elements.amount.value),
+          relatedId: form.elements.relatedId.value.trim(),
+          note: form.elements.note.value.trim()
+        };
+        show("#adjust-message", "正在加积分...", "");
+        try {
+          const result = await adminApi("/admin/credits/adjust", { method: "POST", body: payload });
+          show("#adjust-message", `已完成，当前余额：${result.balanceAfter}`, "success");
+          await Promise.all([loadUsers(), loadOrders()]);
+        } catch (error) {
+          show("#adjust-message", error.message, "error");
+        }
+      }
+
+      async function adminApi(url, options = {}) {
+        const secret = secretInput.value.trim() || localStorage.getItem("xhs_admin_secret") || "";
+        if (!secret) throw new Error("请先填写 ADMIN_SECRET。");
+        const response = await fetch(url, {
+          method: options.method || "GET",
+          headers: {
+            authorization: `Bearer ${secret}`,
+            ...(options.body ? { "content-type": "application/json" } : {})
+          },
+          body: options.body ? JSON.stringify(options.body) : undefined
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || "请求失败");
+        return result;
+      }
+
+      function show(selector, text, type) {
+        const node = document.querySelector(selector);
+        node.textContent = text;
+        node.className = `muted ${type || ""}`.trim();
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+    </script>
+  </body>
+</html>
