@@ -6,6 +6,8 @@
   "scripts": {
     "publish:note": "node scripts/publish.mjs",
     "check": "node scripts/check.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.105.0"
   }
 }
-
